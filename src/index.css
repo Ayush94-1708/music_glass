@@ -1,0 +1,377 @@
+@import "tailwindcss";
+
+@theme {
+  --color-light-bg: var(--ios-bg);
+  --color-light-glass: var(--ios-glass);
+  --color-light-primary: var(--ios-primary);
+  --color-light-secondary: var(--ios-secondary);
+  --color-light-text: var(--ios-text-primary);
+  --color-light-textSecondary: var(--ios-text-secondary);
+
+  --color-dark-bg: var(--ios-bg);
+  --color-dark-glass: var(--ios-glass);
+  --color-dark-primary: var(--ios-primary);
+  --color-dark-secondary: var(--ios-secondary);
+  --color-dark-text: var(--ios-text-primary);
+  --color-dark-textSecondary: var(--ios-text-secondary);
+
+  --radius-ios-lg: var(--ios-radius);
+
+  --animate-liquid: liquid 20s infinite alternate linear;
+  --animate-breath: breath 4s infinite ease-in-out;
+  --animate-floating: floating 6s infinite ease-in-out;
+
+  @keyframes liquid {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+      transform: translate(5%, 5%) scale(1.05);
+    }
+
+    66% {
+      transform: translate(-5%, 10%) scale(0.95);
+    }
+
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  @keyframes breath {
+
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    50% {
+      transform: scale(1.015);
+      opacity: 0.95;
+    }
+  }
+
+  @keyframes floating {
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    25% {
+      transform: translateY(-2px) rotate(0.2deg);
+    }
+
+    75% {
+      transform: translateY(1px) rotate(-0.1deg);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* UI Light Mode Tokens - Refined iOS Heavy Glass */
+    --ios-bg: #F8FAFC;
+    --ios-glass: rgba(255, 255, 255, 0.65);
+    --ios-primary: #4FA3FF;
+    --ios-secondary: #7A6CFF;
+    --ios-text-primary: #0F172A;
+    --ios-text-secondary: #64748B;
+    --ios-blur: 24px;
+    --ios-saturate: 300%;
+    --ios-radius: 24px;
+    --ios-shadow: 0 16px 48px -8px rgba(31, 38, 135, 0.12);
+  }
+
+  .dark-theme {
+    /* UI Dark Mode Tokens - Refined */
+    --ios-bg: #04080F;
+    --ios-glass: rgba(15, 20, 30, 0.45);
+    --ios-primary: #5DA9FF;
+    --ios-secondary: #8B7CFF;
+    --ios-text-primary: #F1F5F9;
+    --ios-text-secondary: #94A3B8;
+    --ios-blur: 24px;
+    --ios-saturate: 200%;
+    --ios-shadow: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  body {
+    @apply antialiased m-0 p-0 transition-colors duration-700;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--ios-bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 163, 255, 0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(122, 108, 255, 0.05), transparent 40%);
+    color: var(--ios-text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Subtitle Noise Overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.015;
+    z-index: 9999;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  body::selection {
+    background-color: var(--ios-primary);
+    color: white;
+  }
+}
+
+@layer components {
+
+  /* Liquid Glass Base Properties */
+  .glass-surface,
+  .glass-button,
+  .glass-input {
+    background: var(--ios-glass);
+    backdrop-filter: blur(var(--ios-blur)) saturate(var(--ios-saturate));
+    -webkit-backdrop-filter: blur(var(--ios-blur)) saturate(var(--ios-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+      var(--ios-shadow),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.5);
+    /* Inner highlight for Light Mode */
+    border-radius: var(--ios-radius);
+    transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: transform, backdrop-filter;
+  }
+
+  .glass-surface:hover {
+    --ios-blur: 32px;
+    background: rgba(255, 255, 255, 0.75);
+    transform: translateY(-4px);
+    box-shadow:
+      0 24px 64px -12px rgba(31, 38, 135, 0.18),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .dark-theme .glass-surface:hover {
+    background: rgba(25, 30, 45, 0.55);
+    box-shadow:
+      0 20px 64px -16px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Deep Glow for Right Panel */
+  .glass-glow {
+    position: relative;
+  }
+
+  .glass-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent, rgba(79, 163, 255, 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Liquid Glass Button */
+  .glass-button {
+    @apply px-6 py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] hover:bg-white/5 active:scale-[0.97] transition-all;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-button-primary {
+    @apply text-white border-transparent;
+    background: linear-gradient(135deg, var(--ios-primary) 0%, var(--ios-secondary) 100%);
+    box-shadow: 0 10px 25px -5px rgba(79, 163, 255, 0.3);
+  }
+
+  .glass-button-primary:hover {
+    box-shadow: 0 15px 30px -5px rgba(79, 163, 255, 0.4);
+  }
+
+  /* Liquid Glass Input */
+  .glass-input {
+    @apply w-full px-5 py-4 bg-transparent outline-none placeholder:text-light-textSecondary/40 focus:border-light-primary/30 focus:bg-white/5;
+  }
+
+  /* Floating Background Elements */
+  .liquid-blob {
+    @apply fixed rounded-full pointer-events-none blur-[120px] opacity-[0.15] transition-all duration-[3000ms];
+    animation: liquid 25s infinite alternate linear;
+    z-index: -1;
+  }
+
+  .visualizer-bg {
+    @apply fixed inset-0 w-full h-full pointer-events-none z-[-1];
+  }
+}
+
+/* Custom Scrollbar - Minimal iOS Style */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 108, 255, 0.08);
+  border-radius: 9999px;
+  @apply transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 108, 255, 0.15);
+}
+
+<<<<<<< HEAD
+.track-item.active {
+  background: var(--sidebar-bg);
+  border-color: var(--primary-color);
+}
+
+.track-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.track-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.track-artist {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Volume Slider Refinement */
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--sidebar-bg);
+  padding: 12px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+}
+
+.volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, var(--primary-color) var(--volume-percent), var(--glass-border) var(--volume-percent));
+  height: 6px;
+  border-radius: 10px;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme .volume-slider {
+  background: linear-gradient(to right, var(--primary-color) var(--volume-percent), rgba(255, 255, 255, 0.1) var(--volume-percent));
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.3);
+}
+
+.volume-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: 35px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 768px) {
+  .music-player-container {
+    padding: 0;
+  }
+
+  .player-card {
+    padding: 24px;
+  }
+
+  .cover-art {
+    width: 280px;
+    height: 280px;
+  }
+
+  .track-metadata .title {
+    font-size: 24px;
+  }
+}
+/* Admin Panel Styles */
+.admin-toggle-btn {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #6366f1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  margin-right: 12px;
+}
+
+.admin-toggle-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.admin-toggle-btn.active {
+  background: #6366f1;
+  color: white;
+}
+
+.admin-panel-container {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+=======
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+>>>>>>> 59e8064 (glass design ready and all feature are working all well)
