@@ -79,7 +79,8 @@
     --ios-secondary: #7A6CFF;
     --ios-text-primary: #0F172A;
     --ios-text-secondary: #64748B;
-    --ios-blur: 24px;
+    --ios-blur: 8px;
+    --ios-blur-heavy: 16px;
     --ios-saturate: 300%;
     --ios-radius: 24px;
     --ios-shadow: 0 16px 48px -8px rgba(31, 38, 135, 0.12);
@@ -93,7 +94,8 @@
     --ios-secondary: #8B7CFF;
     --ios-text-primary: #F1F5F9;
     --ios-text-secondary: #94A3B8;
-    --ios-blur: 24px;
+    --ios-blur: 8px;
+    --ios-blur-heavy: 16px;
     --ios-saturate: 200%;
     --ios-shadow: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
   }
@@ -147,13 +149,13 @@
     /* Inner highlight for Light Mode */
     border-radius: var(--ios-radius);
     transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
-    will-change: transform, backdrop-filter;
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .glass-surface:hover {
-    --ios-blur: 32px;
     background: rgba(255, 255, 255, 0.75);
-    transform: translateY(-4px);
+    transform: translateY(-4px) translateZ(0);
     box-shadow:
       0 24px 64px -12px rgba(31, 38, 135, 0.18),
       inset 0 1px 2px 0 rgba(255, 255, 255, 0.6);
@@ -215,6 +217,31 @@
 
   .visualizer-bg {
     @apply fixed inset-0 w-full h-full pointer-events-none z-[-1];
+  }
+
+  /* Scroll Performance Optimizations */
+  .scroll-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    contain: layout style paint;
+    will-change: scroll-position;
+  }
+
+  /* Remove expensive effects while scrolling */
+  .scrolling .glass-surface {
+    backdrop-filter: blur(2px) saturate(120%);
+    -webkit-backdrop-filter: blur(2px) saturate(120%);
+    transition: none;
+  }
+
+  .scrolling .liquid-blob {
+    opacity: 0.03;
+  }
+
+  .scrolling .visualizer-bg {
+    opacity: 0.5;
   }
 }
 

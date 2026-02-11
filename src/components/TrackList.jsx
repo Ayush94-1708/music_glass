@@ -29,7 +29,7 @@ const TrackList = ({ tracks, currentIndex, onTrackSelect }) => {
             </div>
 
             <div className="flex-1 flex flex-col min-h-0">
-                <div className="space-y-1 overflow-y-auto pr-1 h-[310px] scrollbar-thin">
+                <div className="space-y-1 pr-1">
                     {filteredTracks.map((track) => {
                         const trackIndex = tracks.findIndex(t => t.id === track.id);
                         const isActive = trackIndex === currentIndex;
@@ -37,16 +37,15 @@ const TrackList = ({ tracks, currentIndex, onTrackSelect }) => {
                         return (
                             <motion.div
                                 key={track.id}
-                                layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                whileHover={{ x: 4, backgroundColor: "rgba(255,255,255,0.03)" }}
+                                whileHover={{ x: 4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => onTrackSelect(trackIndex)}
                                 className={`group p-2.5 rounded-2xl cursor-pointer transition-all duration-300
                                            ${isActive
                                         ? 'glass-surface bg-light-primary/10 dark:bg-dark-primary/15 border-light-primary/20 shadow-sm'
-                                        : 'border border-transparent'}`}
+                                        : 'border border-transparent hover:bg-white/3'}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="relative w-11 h-11 flex-shrink-0">
@@ -100,4 +99,4 @@ const TrackList = ({ tracks, currentIndex, onTrackSelect }) => {
     );
 };
 
-export default TrackList;
+export default React.memo(TrackList);

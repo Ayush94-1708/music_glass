@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from 'react';
  * AudioVisualizer component
  * Renders an energetic, bass-reactive, and moody background.
  */
-const AudioVisualizer = ({ audioRef, isPlaying, volume, isActive }) => {
+const AudioVisualizer = ({ audioRef, isPlaying, volume, isActive, isScrolling }) => {
     const canvasRef = useRef(null);
     const contextRef = useRef(null);
     const analyserRef = useRef(null);
@@ -67,6 +67,11 @@ const AudioVisualizer = ({ audioRef, isPlaying, volume, isActive }) => {
 
             if (isActive) {
                 animationFrameRef.current = requestAnimationFrame(render);
+            }
+
+            // Completely pause rendering during scroll to eliminate lag
+            if (isScrolling) {
+                return;
             }
 
             if (analyserRef.current) {
@@ -167,7 +172,8 @@ const AudioVisualizer = ({ audioRef, isPlaying, volume, isActive }) => {
 
         const drawWave = (ctx, w, h, t, bass, audioVar, config) => {
             ctx.save();
-            if (config.blur) ctx.filter = `blur(${config.blur}px)`;
+            // Reduce blur for performance
+            if (config.blur) ctx.filter = `blur(${Math.min(config.blur * 0.5, 20)}px)`;
 
             const dynamicOpacity = config.opacity + (bass * 0.2);
             ctx.fillStyle = config.color + dynamicOpacity + ')';
@@ -197,7 +203,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, volume, isActive }) => {
         return () => {
             cancelAnimationFrame(animationFrameRef.current);
         };
-    }, [isPlaying, volume, isActive, audioRef]);
+    }, [isPlaying, volume, isActive, isScrolling, audioRef]);
 
     useEffect(() => {
         const handleResize = () => {

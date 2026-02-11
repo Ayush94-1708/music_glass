@@ -12,6 +12,7 @@ import io from 'socket.io-client';
 import RoomManager from './RoomManager';
 import AudioVisualizer from './AudioVisualizer';
 import ErrorBoundary from './ErrorBoundary';
+import useScrollPerformance from '../hooks/useScrollPerformance';
 
 // Connect using dynamic hostname and protocol-aware logic
 const getBaseUrl = () => {
@@ -98,6 +99,10 @@ const MusicPlayer = ({ user }) => {
 
     const audioRef = useRef(null);
     const isInternalUpdate = useRef(false);
+    const scrollRef = useRef(null);
+
+    // Scroll performance optimization
+    const isScrolling = useScrollPerformance(scrollRef);
 
     const currentTrack = allTracks[currentTrackIndex] || staticTracks[0];
 
@@ -459,7 +464,7 @@ const MusicPlayer = ({ user }) => {
                 )}
             </AnimatePresence>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch ${isScrolling ? 'scrolling' : ''}`}>
                 {/* Player Section - Compact 5 Columns */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
@@ -711,7 +716,7 @@ const MusicPlayer = ({ user }) => {
                                 <div className="w-1.5 h-1.5 rounded-full bg-light-secondary" />
                                 <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Up Next</h3>
                             </div>
-                            <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                            <div ref={scrollRef} className="flex-1 scroll-container pr-1 max-h-[280px]">
                                 <TrackList
                                     tracks={allTracks}
                                     currentIndex={currentTrackIndex}
