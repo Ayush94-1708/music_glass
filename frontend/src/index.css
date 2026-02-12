@@ -1,0 +1,284 @@
+@import "tailwindcss";
+
+@theme {
+  --color-light-bg: var(--ios-bg);
+  --color-light-glass: var(--ios-glass);
+  --color-light-primary: var(--ios-primary);
+  --color-light-secondary: var(--ios-secondary);
+  --color-light-text: var(--ios-text-primary);
+  --color-light-textSecondary: var(--ios-text-secondary);
+
+  --color-dark-bg: var(--ios-bg);
+  --color-dark-glass: var(--ios-glass);
+  --color-dark-primary: var(--ios-primary);
+  --color-dark-secondary: var(--ios-secondary);
+  --color-dark-text: var(--ios-text-primary);
+  --color-dark-textSecondary: var(--ios-text-secondary);
+
+  --radius-ios-lg: var(--ios-radius);
+
+  --animate-liquid: liquid 20s infinite alternate linear;
+  --animate-breath: breath 4s infinite ease-in-out;
+  --animate-floating: floating 6s infinite ease-in-out;
+
+  @keyframes liquid {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+      transform: translate(5%, 5%) scale(1.05);
+    }
+
+    66% {
+      transform: translate(-5%, 10%) scale(0.95);
+    }
+
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  @keyframes breath {
+
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    50% {
+      transform: scale(1.015);
+      opacity: 0.95;
+    }
+  }
+
+  @keyframes floating {
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    25% {
+      transform: translateY(-2px) rotate(0.2deg);
+    }
+
+    75% {
+      transform: translateY(1px) rotate(-0.1deg);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* UI Light Mode Tokens - Refined iOS Heavy Glass */
+    --ios-bg: #F8FAFC;
+    --ios-glass: rgba(255, 255, 255, 0.65);
+    --ios-primary: #4FA3FF;
+    --ios-secondary: #7A6CFF;
+    --ios-text-primary: #0F172A;
+    --ios-text-secondary: #64748B;
+    --ios-blur: 26px;
+    --ios-blur-heavy: 30px;
+    --ios-saturate: 180%;
+    --ios-radius: 28px;
+    --ios-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark-theme {
+    /* UI Dark Mode Tokens - Refined */
+    --ios-bg: #04080F;
+    --ios-glass: rgba(15, 20, 30, 0.45);
+    --ios-primary: #5DA9FF;
+    --ios-secondary: #8B7CFF;
+    --ios-text-primary: #F1F5F9;
+    --ios-text-secondary: #94A3B8;
+    --ios-blur: 8px;
+    --ios-blur-heavy: 16px;
+    --ios-saturate: 200%;
+    --ios-shadow: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  body {
+    @apply antialiased m-0 p-0 transition-colors duration-700;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--ios-bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(79, 163, 255, 0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(122, 108, 255, 0.05), transparent 40%);
+    color: var(--ios-text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Subtitle Noise Overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.015;
+    z-index: 9999;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  body::selection {
+    background-color: var(--ios-primary);
+    color: white;
+  }
+}
+
+@layer components {
+
+  /* Liquid Glass Base Properties */
+  .glass-surface,
+  .glass-button,
+  .glass-input {
+    background: var(--ios-glass);
+    backdrop-filter: blur(var(--ios-blur)) saturate(var(--ios-saturate));
+    -webkit-backdrop-filter: blur(var(--ios-blur)) saturate(var(--ios-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+      var(--ios-shadow),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+    /* Inner highlight for Light Mode */
+    border-radius: var(--ios-radius);
+    transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .glass-surface:hover {
+    background: rgba(255, 255, 255, 0.75);
+    transform: translateY(-4px) translateZ(0);
+    box-shadow:
+      0 24px 64px -12px rgba(31, 38, 135, 0.18),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .dark-theme .glass-surface:hover {
+    background: rgba(25, 30, 45, 0.55);
+    box-shadow:
+      0 20px 64px -16px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Deep Glow for Right Panel */
+  .glass-glow {
+    position: relative;
+  }
+
+  .glass-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent, rgba(79, 163, 255, 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Liquid Glass Button */
+  .glass-button {
+    @apply px-6 py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] hover:bg-white/5 active:scale-[0.97] transition-all;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-button-primary {
+    @apply text-white border-transparent;
+    background: linear-gradient(135deg, var(--ios-primary) 0%, var(--ios-secondary) 100%);
+    box-shadow: 0 10px 25px -5px rgba(79, 163, 255, 0.3);
+  }
+
+  .glass-button-primary:hover {
+    box-shadow: 0 15px 30px -5px rgba(79, 163, 255, 0.4);
+  }
+
+  /* Liquid Glass Input */
+  .glass-input {
+    @apply w-full px-5 py-4 bg-transparent outline-none placeholder:text-light-textSecondary/40 focus:border-light-primary/30 focus:bg-white/5;
+  }
+
+  /* Floating Background Elements */
+  .liquid-blob {
+    @apply fixed rounded-full pointer-events-none blur-[120px] opacity-[0.15] transition-all duration-[3000ms];
+    animation: liquid 25s infinite alternate linear;
+    z-index: -1;
+  }
+
+  .visualizer-bg {
+    @apply fixed inset-0 w-full h-full pointer-events-none z-[-1];
+  }
+
+  /* Scroll Performance Optimizations */
+  .scroll-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    contain: layout style paint;
+    will-change: scroll-position;
+  }
+
+  /* Remove expensive effects while scrolling */
+  .scrolling .glass-surface {
+    backdrop-filter: blur(2px) saturate(120%);
+    -webkit-backdrop-filter: blur(2px) saturate(120%);
+    transition: none;
+  }
+
+  .scrolling .liquid-blob {
+    opacity: 0.03;
+  }
+
+  .scrolling .visualizer-bg {
+    opacity: 0.5;
+  }
+}
+
+/* Custom Scrollbar - Minimal iOS Style */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 108, 255, 0.08);
+  border-radius: 9999px;
+  @apply transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 108, 255, 0.15);
+}
+
+/* Animation Delays */
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-5000 {
+  animation-delay: 5s;
+}
