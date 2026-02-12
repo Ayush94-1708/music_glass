@@ -42,11 +42,14 @@ const TrackList = ({ tracks, currentIndex, onTrackSelect }) => {
                                 whileHover={{ x: 4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => onTrackSelect(trackIndex)}
-                                className={`group p-2.5 rounded-2xl cursor-pointer transition-all duration-300
+                                className={`group p-2.5 rounded-2xl cursor-pointer transition-all duration-300 relative overflow-hidden
                                            ${isActive
-                                        ? 'glass-surface bg-light-primary/10 dark:bg-dark-primary/15 border-light-primary/20 shadow-sm'
-                                        : 'border border-transparent hover:bg-white/3'}`}
+                                        ? 'bg-light-primary/10 dark:bg-dark-primary/15 shadow-[0_4px_20px_-4px_rgba(79,163,255,0.2)] border border-light-primary/20'
+                                        : 'border border-transparent hover:bg-white/5 hover:border-white/5 hover:shadow-lg'}`}
                             >
+                                {isActive && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-light-primary/5 to-transparent pointer-events-none" />
+                                )}
                                 <div className="flex items-center gap-4">
                                     <div className="relative w-11 h-11 flex-shrink-0">
                                         <img
@@ -79,9 +82,9 @@ const TrackList = ({ tracks, currentIndex, onTrackSelect }) => {
                                         </p>
                                     </div>
 
-                                    <div className={`transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'}`}>
-                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isActive ? 'bg-light-primary text-white shadow-lg' : 'glass-surface text-light-textSecondary'}`}>
-                                            <Play size={12} fill="currentColor" className="ml-0.5" />
+                                    <div className={`transition-all duration-300 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-75 translate-x-2 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? 'bg-light-primary text-white shadow-glow-blue' : 'bg-white/10 text-white backdrop-blur-md'}`}>
+                                            <Play size={14} fill="currentColor" className="ml-0.5" />
                                         </div>
                                     </div>
                                 </div>

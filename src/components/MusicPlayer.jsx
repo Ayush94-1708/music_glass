@@ -464,12 +464,18 @@ const MusicPlayer = ({ user }) => {
                 )}
             </AnimatePresence>
 
-            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch ${isScrolling ? 'scrolling' : ''}`}>
-                {/* Player Section - Compact 5 Columns */}
+            {/* Conditional Layout Grid - Stable 3-Panel System */}
+            <div className={`grid gap-6 lg:gap-6 items-start transition-all duration-300 ease-in-out
+                ${roomCode
+                    ? 'grid-cols-1 lg:grid-cols-[minmax(300px,340px)_minmax(280px,1fr)_minmax(300px,380px)]'
+                    : 'grid-cols-1 lg:grid-cols-[minmax(300px,340px)_1fr]'
+                } ${isScrolling ? 'scrolling' : ''}`}>
+
+                {/* Music Player - Fixed Width Column (Never Resizes) */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="lg:col-span-5 flex flex-col h-full"
+                    layout
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="flex flex-col h-full w-full"
                 >
                     <div className="glass-surface p-6 lg:p-8 relative overflow-hidden h-full flex flex-col justify-center">
                         {/* Hidden Audio */}
@@ -501,19 +507,18 @@ const MusicPlayer = ({ user }) => {
                         </AnimatePresence>
 
                         {/* Artwork */}
-                        <div className="relative z-10 group mb-6 flex justify-center">
+                        <div className="relative z-10 group mb-4 flex justify-center">
                             <motion.div
-                                animate={isPlaying ? { scale: 1.02, rotate: [0, 0.5, 0, -0.5, 0] } : { scale: 1, rotate: 0 }}
-                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                                className="relative z-10 w-[210px] h-[210px]"
+                                animate={isPlaying ? { scale: 1.02 } : { scale: 1 }}
+                                className={`relative z-10 w-[180px] h-[180px] ${isPlaying ? 'animate-[breath_4s_ease-in-out_infinite]' : ''}`}
                             >
                                 <img
                                     src={currentTrack.coverImage}
                                     alt={currentTrack.title}
-                                    className={`w-full h-full object-cover rounded-[24px] shadow-2xl transition-all duration-1000 ${isPlaying ? 'ring-2 ring-light-primary/30 dark:ring-dark-primary/30' : ''}`}
+                                    className={`w-full h-full object-cover rounded-[20px] shadow-2xl transition-all duration-1000 ${isPlaying ? 'ring-1 ring-light-primary/30 dark:ring-dark-primary/30' : ''}`}
                                 />
                                 {isPlaying && (
-                                    <div className="absolute inset-0 rounded-[24px] bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                                    <div className="absolute inset-0 rounded-[20px] bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                                 )}
                             </motion.div>
                         </div>
@@ -533,7 +538,7 @@ const MusicPlayer = ({ user }) => {
                                 initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-sm text-light-textSecondary dark:text-dark-textSecondary mt-0.5 opacity-80"
+                                className="text-xs font-medium text-light-textSecondary dark:text-dark-textSecondary mt-0.5 opacity-80"
                             >
                                 {currentTrack.artist}
                             </motion.p>
@@ -567,6 +572,8 @@ const MusicPlayer = ({ user }) => {
                                 duration={duration}
                                 onSeek={handleSeek}
                                 readOnly={role === 'listener'}
+                                audioRef={audioRef}
+                                isPlaying={isPlaying}
                             />
 
                             <div className="pt-2">
@@ -604,38 +611,40 @@ const MusicPlayer = ({ user }) => {
                     </div>
                 </motion.div>
 
-                {/* Sidebar Section - Strengthened 7 Columns */}
-                <motion.div
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="lg:col-span-7 flex flex-col h-full"
-                >
-                    <div className="glass-surface glass-glow p-6 flex flex-col gap-6 h-full">
-                        <section>
-                            <div className="flex items-center gap-2 mb-4 px-1">
-                                <div className="w-1.5 h-1.5 rounded-full bg-light-primary" />
-                                <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Session</h3>
-                            </div>
-                            <RoomManager
-                                onCreateRoom={createRoom}
-                                onJoinRoom={joinRoom}
-                                onLeaveRoom={leaveRoom}
-                                roomCode={roomCode}
-                                role={role}
-                                users={users}
-                            />
-                        </section>
+                {/* Session Panel - Conditional (Appears when room is active) */}
+                <AnimatePresence mode="wait">
+                    {roomCode && (
+                        <motion.div
+                            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            layout
+                            className="flex flex-col h-full"
+                        >
+                            <div className="glass-surface glass-glow p-6 flex flex-col gap-6 h-full">
+                                <section>
+                                    <div className="flex items-center gap-2 mb-4 px-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-light-primary" />
+                                        <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Session</h3>
+                                    </div>
+                                    <RoomManager
+                                        onCreateRoom={createRoom}
+                                        onJoinRoom={joinRoom}
+                                        onLeaveRoom={leaveRoom}
+                                        roomCode={roomCode}
+                                        role={role}
+                                        users={users}
+                                    />
+                                </section>
 
-                        <div className="h-px bg-white/5 mx-1" />
+                                <div className="h-px bg-white/5 mx-1" />
 
-                        {roomCode && (
-                            <>
                                 <section>
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-light-primary" />
-                                            <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Session</h3>
+                                            <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Participants</h3>
                                         </div>
 
                                         {/* Centralized Join Video Button */}
@@ -651,12 +660,12 @@ const MusicPlayer = ({ user }) => {
                                             {isVideoEnabled ? (
                                                 <>
                                                     <VideoOff size={12} />
-                                                    <span>Leave Video ({(users || []).filter(u => u.isVideoOn).length})</span>
+                                                    <span>Leave ({(users || []).filter(u => u.isVideoOn).length})</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <Users size={12} />
-                                                    <span>Join Video ({(users || []).filter(u => u.isVideoOn).length})</span>
+                                                    <span>Join ({(users || []).filter(u => u.isVideoOn).length})</span>
                                                 </>
                                             )}
                                         </motion.button>
@@ -667,6 +676,35 @@ const MusicPlayer = ({ user }) => {
                                         onJoinVideo={handleJoinVideo}
                                         onLeaveVideo={handleLeaveVideo}
                                         isVideoEnabled={isVideoEnabled}
+                                    />
+                                </section>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Playlist Panel - Adjusts Width Smoothly */}
+                <motion.div
+                    layout
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="flex flex-col h-full"
+                >
+                    <div className="glass-surface glass-glow p-6 flex flex-col gap-6 h-full">
+                        {/* Show RoomManager only when NO session is active */}
+                        {!roomCode && (
+                            <>
+                                <section>
+                                    <div className="flex items-center gap-2 mb-4 px-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-light-primary" />
+                                        <h3 className="text-[10px] font-black tracking-widest uppercase opacity-40">Session</h3>
+                                    </div>
+                                    <RoomManager
+                                        onCreateRoom={createRoom}
+                                        onJoinRoom={joinRoom}
+                                        onLeaveRoom={leaveRoom}
+                                        roomCode={roomCode}
+                                        role={role}
+                                        users={users}
                                     />
                                 </section>
                                 <div className="h-px bg-white/5 mx-1" />
@@ -711,6 +749,7 @@ const MusicPlayer = ({ user }) => {
                             )}
                         </AnimatePresence>
 
+                        {/* Playlist Section - Always Visible */}
                         <section className="flex-1 flex flex-col min-h-0 overflow-hidden">
                             <div className="flex items-center gap-2 mb-4 px-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-light-secondary" />
