@@ -83,10 +83,14 @@ mongoose.set('bufferCommands', false); // Disable buffering to see errors immedi
 
 const server = http.createServer(app);
 const io = new Server(server, {
+    path: '/socket.io',
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    allowEIO3: true,
+    transports: ['polling', 'websocket']
 });
 
 // Middleware to verify JWT
@@ -509,11 +513,12 @@ if (process.env.VERCEL !== '1') {
 
 // Export a combined handler for Vercel
 module.exports = (req, res) => {
-    // If it's a socket.io request, let the socket.io engine handle it
-    if (req.url.startsWith('/socket.io')) {
-        io.engine.handleRequest(req, res);
-    } else {
-        // Otherwise, let Express handle it
-        app(req, res);
+    // Add debug log for incoming requests
+    if (req.url.includes('/socket.io')) {
+        console.log(`Socket request: ${req.method} ${req.url}`);
+        return io.engine.handleRequest(req, res);
     }
+
+    // Default to Express app
+    return app(req, res);
 };

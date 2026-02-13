@@ -21,9 +21,14 @@ const getBaseUrl = () => {
     return import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
 };
 
-const socket = io(getBaseUrl() || '/', {
+const socket = io(getBaseUrl(), {
     path: '/socket.io',
-    autoConnect: true
+    transports: import.meta.env.PROD ? ['polling'] : ['websocket', 'polling'],
+    autoConnect: true,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: Infinity
 });
 
 const MusicPlayer = ({ user }) => {
