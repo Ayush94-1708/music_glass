@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -20,8 +21,41 @@ dotenv.config();
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
 const app = express();
-app.use(cors());
+
+// CORS configuration for production and development
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allowed origins
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'https://localhost:5173',
+            process.env.FRONTEND_URL, // Will be set in Vercel
+        ];
+
+        // Allow any vercel.app domain for deployment
+        if (origin.includes('vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/audio', express.static(path.join(__dirname, 'public', 'audio')));
 app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')));
@@ -29,9 +63,23 @@ app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')));
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/music_app';
 
+console.log('Attempting to connect to MongoDB at:', MONGO_URI);
+
 mongoose.connect(MONGO_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.error('MongoDB Connection Error:', err));
+    .then(() => console.log('Initial MongoDB Connection Successful'))
+    .catch(err => console.error('Initial MongoDB Connection Error:', err));
+
+const db = mongoose.connection;
+db.on('error', (err) => console.error('Mongoose Connection Error event:', err));
+db.on('connected', () => console.log('Mongoose connected to db'));
+db.once('open', () => {
+    console.log('Mongoose connection open to', MONGO_URI);
+});
+db.on('disconnected', () => console.log('Mongoose disconnected'));
+db.on('reconnected', () => console.log('Mongoose reconnected'));
+
+// Set a timeout for the overall connection if needed
+mongoose.set('bufferCommands', false); // Disable buffering to see errors immediately
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -44,13 +92,17 @@ const io = new Server(server, {
 // Middleware to verify JWT
 const auth = (req, res, next) => {
     const token = req.header('x-auth-token');
+    console.log('Auth middleware - token present:', !!token);
+
     if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
 
     try {
         const decoded = jwt.verify(token, 'secret_key_change_me');
         req.user = decoded.user;
+        console.log('Auth middleware - decoded user:', req.user);
         next();
     } catch (err) {
+        console.error('Auth middleware - token verification failed:', err.message);
         res.status(401).json({ msg: 'Token is not valid' });
     }
 };
@@ -58,13 +110,25 @@ const auth = (req, res, next) => {
 // Middleware to check if user is admin
 const admin = async (req, res, next) => {
     try {
+        console.log('Admin middleware - checking user:', req.user);
         const user = await User.findById(req.user.id);
+        console.log('Admin middleware - found user:', user ? user.username : 'NOT FOUND', 'role:', user?.role);
+
+        if (!user) {
+            console.log('Admin middleware - User not found in database');
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
         if (user.role !== 'admin') {
+            console.log('Admin middleware - Access denied, user role:', user.role);
             return res.status(403).json({ msg: 'Access denied. Admin only.' });
         }
+
+        console.log('Admin middleware - Access granted');
         next();
     } catch (err) {
-        res.status(500).send('Server error');
+        console.error('Admin middleware error:', err);
+        res.status(500).send('Server error: ' + err.message);
     }
 };
 
@@ -126,93 +190,156 @@ app.get('/api/songs', async (req, res) => {
         const songs = await Song.find().sort({ createdAt: -1 });
         res.json(songs);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Songs Fetch Error:', err);
+        res.status(500).send('Server error: ' + err.message);
     }
 });
 
 // Admin Media Ingestion Route
 
-app.post('/api/admin/ingest', [auth, admin], async (req, res) => {
+app.post('/api/admin/ingest', [auth, admin, upload.single('audio')], async (req, res) => {
     try {
         const { url, title, artist, coverImage } = req.body;
-        if (!url || !title || !artist) {
-            return res.status(400).json({ msg: 'Please provide url, title, artist' });
+
+        if (!title || !artist) {
+            return res.status(400).json({ msg: 'Please provide title and artist' });
         }
 
-        const musicDir = path.join(__dirname, 'public', 'audio');
-        await fs.ensureDir(musicDir);
+        console.log(`Starting ingestion for: ${title}`);
 
-        const filename = `${Date.now()}_${title.replace(/\s+/g, '_')}.mp3`;
-        const filePath = path.join(musicDir, filename);
-        // audioUrl is relative, frontend will prepend API_URL
-        const audioUrl = `/audio/${filename}`;
+        const uploadBufferToCloudinary = (buffer, format = 'mp3') => {
+            return new Promise((resolve, reject) => {
+                console.log('Uploading buffer to Cloudinary, size:', buffer.length, 'bytes');
 
-        if (ytdl.validateURL(url)) {
-            // YouTube URL
-            console.log('Processing YouTube URL:', url);
-            const stream = ytdl(url, {
-                quality: 'highestaudio',
-                filter: 'audioonly',
-                requestOptions: {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        resource_type: 'video',
+                        folder: 'music_app_audio',
+                        public_id: `${Date.now()}_${title.replace(/\s+/g, '_')}`,
+                        format: format,
+                        timeout: 120000, // 2 minutes
+                        chunk_size: 6000000 // 6MB chunks
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('Cloudinary upload error:', error);
+                            reject(error);
+                        } else {
+                            console.log('Cloudinary upload successful:', result.secure_url);
+                            resolve(result);
+                        }
                     }
-                }
+                );
+
+                const { Readable } = require('stream');
+                const stream = new Readable();
+                stream.push(buffer);
+                stream.push(null);
+                stream.pipe(uploadStream);
             });
+        };
 
-            ffmpeg(stream)
-                .audioBitrate(128)
-                .toFormat('mp3')
-                .on('error', (err) => {
-                    console.error('FFmpeg Error:', err.message);
-                    if (!res.headersSent) {
-                        const msg = err.message.includes('403') ? 'YouTube access forbidden (403). Try another link or check if the video is restricted.' : 'Processing failed';
-                        res.status(500).json({ msg });
+        const uploadStreamToCloudinary = (stream, format = 'mp3') => {
+            return new Promise((resolve, reject) => {
+                console.log('Uploading stream to Cloudinary');
+
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        resource_type: 'video',
+                        folder: 'music_app_audio',
+                        public_id: `${Date.now()}_${title.replace(/\s+/g, '_')}`,
+                        format: format,
+                        timeout: 120000, // 2 minutes
+                        chunk_size: 6000000 // 6MB chunks
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('Cloudinary upload error:', error);
+                            reject(error);
+                        } else {
+                            console.log('Cloudinary upload successful:', result.secure_url);
+                            resolve(result);
+                        }
                     }
-                })
-                .on('end', async () => {
-                    const song = new Song({
-                        title, artist, audioUrl, coverImage: coverImage || '/covers/default.png', addedBy: req.user.id
-                    });
-                    await song.save();
-                    if (!res.headersSent) res.json(song);
-                })
-                .save(filePath);
-        } else if (url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
-            const response = await axios({ url, method: 'GET', responseType: 'stream' });
-            const writer = fs.createWriteStream(filePath);
-            response.data.pipe(writer);
-            writer.on('finish', async () => {
-                const song = new Song({
-                    title, artist, audioUrl, coverImage: coverImage || '/covers/default.png', addedBy: req.user.id
+                );
+                stream.pipe(uploadStream).on('error', reject);
+            });
+        };
+
+        let audioUrl;
+
+        // Case 1: Direct File Upload
+        if (req.file) {
+            console.log('Processing Direct File Upload:', req.file.originalname);
+            const result = await uploadBufferToCloudinary(req.file.buffer, 'mp3');
+            audioUrl = result.secure_url;
+        }
+        // Case 2: URL Ingestion
+        else if (url) {
+            if (ytdl.validateURL(url)) {
+                console.log('Processing YouTube URL:', url);
+                const stream = ytdl(url, {
+                    quality: 'highestaudio',
+                    filter: 'audioonly',
+                    requestOptions: {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        }
+                    }
                 });
-                await song.save();
-                if (!res.headersSent) res.json(song);
-            });
-            writer.on('error', (err) => {
-                console.error('Download Error:', err);
-                if (!res.headersSent) res.status(500).json({ msg: 'Download failed' });
-            });
+
+                const passThrough = new require('stream').PassThrough();
+                ffmpeg(stream)
+                    .audioBitrate(128)
+                    .toFormat('mp3')
+                    .on('error', (err) => {
+                        console.error('FFmpeg Error:', err);
+                        if (!res.headersSent) res.status(500).json({ msg: 'Processing failed' });
+                    })
+                    .pipe(passThrough);
+
+                const result = await uploadStreamToCloudinary(passThrough, 'mp3');
+                audioUrl = result.secure_url;
+
+            } else if (url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                console.log('Processing Direct URL:', url);
+                const response = await axios({ url, method: 'GET', responseType: 'stream' });
+                const result = await uploadStreamToCloudinary(response.data, 'mp3');
+                audioUrl = result.secure_url;
+            } else {
+                console.log('Processing with Generic FFmpeg:', url);
+                const passThrough = new require('stream').PassThrough();
+                ffmpeg(url)
+                    .toFormat('mp3')
+                    .on('error', (err) => {
+                        console.error('FFmpeg Error:', err);
+                        if (!res.headersSent) res.status(500).json({ msg: 'Could not process video link.' });
+                    })
+                    .pipe(passThrough);
+
+                const result = await uploadStreamToCloudinary(passThrough, 'mp3');
+                audioUrl = result.secure_url;
+            }
         } else {
-            ffmpeg(url)
-                .toFormat('mp3')
-                .on('error', (err) => {
-                    console.error('FFmpeg Error:', err);
-                    if (!res.headersSent) res.status(500).json({ msg: 'Could not process video link' });
-                })
-                .on('end', async () => {
-                    const song = new Song({
-                        title, artist, audioUrl, coverImage: coverImage || '/covers/default.png', addedBy: req.user.id
-                    });
-                    await song.save();
-                    if (!res.headersSent) res.json(song);
-                })
-                .save(filePath);
+            return res.status(400).json({ msg: 'Please provide either a URL or an audio file' });
         }
+
+        const song = new Song({
+            title,
+            artist,
+            audioUrl,
+            sourceUrl: url || 'Uploaded File',
+            coverImage: coverImage || '/covers/default.png',
+            addedBy: req.user.id
+        });
+
+        await song.save();
+        console.log('Song saved:', song.title);
+        res.json(song);
+
     } catch (err) {
-        console.error('Ingestion Error:', err);
-        if (!res.headersSent) res.status(500).send('Server error');
+        console.error('Ingestion Fatal Error:', err);
+        if (!res.headersSent) res.status(500).send('Server error: ' + (err.stack || err.message));
     }
 });
 
@@ -372,6 +499,13 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Socket.IO Server running on port ${PORT}`);
-});
+
+// Only start server if not in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Socket.IO Server running on port ${PORT}`);
+    });
+}
+
+// Export for Vercel serverless
+module.exports = app;

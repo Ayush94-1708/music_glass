@@ -9,32 +9,54 @@ const AdminPanel = ({ user, token, onBack }) => {
         artist: '',
         coverImage: ''
     });
+    const [file, setFile] = useState(null);
     const [status, setStatus] = useState({ type: '', message: '' });
     const [loading, setLoading] = useState(false);
+    const [uploadMode, setUploadMode] = useState('link'); // 'link' or 'file'
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleFileChange = (e) => {
+        setFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setStatus({ type: 'info', message: 'Processing media... This may take a moment.' });
+        setStatus({ type: 'info', message: 'Processing... This may take a moment.' });
 
         try {
+            const data = new FormData();
+            data.append('title', formData.title);
+            data.append('artist', formData.artist);
+            data.append('coverImage', formData.coverImage);
+
+            if (uploadMode === 'link') {
+                if (!formData.url) throw new Error('URL is required');
+                data.append('url', formData.url);
+            } else {
+                if (!file) throw new Error('Please select a file');
+                data.append('audio', file);
+            }
+
             const config = {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                     'x-auth-token': token
                 }
             };
-            const res = await axios.post(`http://${window.location.hostname}:3001/api/admin/ingest`, formData, config);
+
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+            const res = await axios.post(`${apiUrl}/api/admin/ingest`, data, config);
             setStatus({ type: 'success', message: `Successfully added "${res.data.title}"!` });
             setFormData({ url: '', title: '', artist: '', coverImage: '' });
+            setFile(null);
         } catch (err) {
             setStatus({
                 type: 'error',
-                message: err.response?.data?.msg || 'Failed to ingest media. Please check the URL and try again.'
+                message: err.response?.data?.msg || err.message || 'Failed to ingest media.'
             });
         } finally {
             setLoading(false);
@@ -46,21 +68,49 @@ const AdminPanel = ({ user, token, onBack }) => {
             <div className="admin-card">
                 <div className="admin-header">
                     <h2>Admin Media Ingestion</h2>
-                    <p>Paste an audio or video link to add it to the library.</p>
+                    <p>Upload a file or paste a link to add to library.</p>
+                </div>
+
+                <div className="mode-toggle">
+                    <button
+                        className={uploadMode === 'link' ? 'active' : ''}
+                        onClick={() => setUploadMode('link')}
+                    >
+                        <LinkIcon size={16} /> Link
+                    </button>
+                    <button
+                        className={uploadMode === 'file' ? 'active' : ''}
+                        onClick={() => setUploadMode('file')}
+                    >
+                        <Upload size={16} /> Local File
+                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="admin-form">
-                    <div className="input-group">
-                        <label><LinkIcon size={16} /> Media URL</label>
-                        <input
-                            type="text"
-                            name="url"
-                            value={formData.url}
-                            onChange={handleChange}
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            required
-                        />
-                    </div>
+                    {uploadMode === 'link' ? (
+                        <div className="input-group">
+                            <label><LinkIcon size={16} /> Media URL</label>
+                            <input
+                                type="text"
+                                name="url"
+                                value={formData.url}
+                                onChange={handleChange}
+                                placeholder="https://www.youtube.com/watch?v=..."
+                                required={uploadMode === 'link'}
+                            />
+                        </div>
+                    ) : (
+                        <div className="input-group">
+                            <label><Upload size={16} /> Select Audio File (.mp3)</label>
+                            <input
+                                type="file"
+                                accept="audio/mpeg"
+                                onChange={handleFileChange}
+                                required={uploadMode === 'file'}
+                                className="file-input"
+                            />
+                        </div>
+                    )}
 
                     <div className="form-row">
                         <div className="input-group">
@@ -118,7 +168,7 @@ const AdminPanel = ({ user, token, onBack }) => {
                 <button onClick={onBack} className="back-btn">Back to Player</button>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .admin-panel-container {
                     display: flex;
                     justify-content: center;
@@ -146,6 +196,45 @@ const AdminPanel = ({ user, token, onBack }) => {
                 .admin-header p {
                     color: var(--text-secondary);
                     margin-bottom: 2rem;
+                }
+                .mode-toggle {
+                    display: flex;
+                    gap: 1rem;
+                    margin-bottom: 2rem;
+                    background: rgba(0,0,0,0.05);
+                    padding: 0.5rem;
+                    border-radius: 12px;
+                }
+                .dark-theme .mode-toggle {
+                    background: rgba(255,255,255,0.05);
+                }
+                .mode-toggle button {
+                    flex: 1;
+                    padding: 0.6rem;
+                    border: none;
+                    background: transparent;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                    transition: all 0.2s;
+                }
+                .mode-toggle button.active {
+                    background: var(--accent-color, #6366f1);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+                }
+                .file-input {
+                    padding: 0.5rem !important;
+                    border: 2px dashed #ccc !important;
+                }
+                .dark-theme .file-input {
+                    border-color: #444 !important;
                 }
                 .admin-form .input-group {
                     margin-bottom: 1.5rem;
