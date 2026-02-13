@@ -507,5 +507,13 @@ if (process.env.VERCEL !== '1') {
     });
 }
 
-// Export for Vercel serverless
-module.exports = app;
+// Export a combined handler for Vercel
+module.exports = (req, res) => {
+    // If it's a socket.io request, let the socket.io engine handle it
+    if (req.url.startsWith('/socket.io')) {
+        io.engine.handleRequest(req, res);
+    } else {
+        // Otherwise, let Express handle it
+        app(req, res);
+    }
+};
