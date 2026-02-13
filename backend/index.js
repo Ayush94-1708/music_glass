@@ -85,12 +85,20 @@ const server = http.createServer(app);
 const io = new Server(server, {
     path: '/socket.io',
     cors: {
-        origin: "*",
+        origin: (origin, callback) => {
+            // In production, we should be specific. For now, allow Vercel and localhost.
+            if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         methods: ["GET", "POST"],
         credentials: true
     },
     allowEIO3: true,
-    transports: ['polling', 'websocket']
+    transports: ['polling'], // Force polling on server too
+    allowUpgrades: false     // Disable upgrades as they won't work on Vercel
 });
 
 // Middleware to verify JWT
