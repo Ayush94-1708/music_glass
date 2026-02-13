@@ -86,8 +86,13 @@ const io = new Server(server, {
     path: '/socket.io',
     cors: {
         origin: (origin, callback) => {
-            // In production, we should be specific. For now, allow Vercel and localhost.
-            if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            // Allow any vercel.app domain, including subdomains, and localhost
+            if (origin.includes('vercel.app') ||
+                origin.includes('localhost') ||
+                origin.includes('127.0.0.1')) {
                 callback(null, true);
             } else {
                 callback(new Error('Not allowed by CORS'));
@@ -97,8 +102,11 @@ const io = new Server(server, {
         credentials: true
     },
     allowEIO3: true,
-    transports: ['polling'], // Force polling on server too
-    allowUpgrades: false     // Disable upgrades as they won't work on Vercel
+    transports: ['polling'],
+    allowUpgrades: false,
+    pingTimeout: 60000,     // Increase timeout for serverless wake-up
+    pingInterval: 25000,    // Stable interval
+    connectTimeout: 45000   // Allow more time for initial connection
 });
 
 // Middleware to verify JWT
