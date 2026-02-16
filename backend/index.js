@@ -154,6 +154,16 @@ const admin = async (req, res, next) => {
     }
 };
 
+// Health Check Route
+app.get('/api/health', (req, res) => {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    res.json({
+        status: 'ok',
+        database: dbStatus,
+        env: process.env.NODE_ENV || 'development'
+    });
+});
+
 // Auth Routes
 app.post('/api/auth/register', async (req, res) => {
     try {
