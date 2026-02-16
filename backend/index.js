@@ -42,6 +42,7 @@ const corsOptions = {
         const allowedOrigins = [
             'http://localhost:5173',
             'https://localhost:5173',
+            'https://vibesync-np4z.onrender.com', // New Render URL
             process.env.FRONTEND_URL, // Will be set in Vercel
         ];
 
@@ -89,8 +90,9 @@ const io = new Server(server, {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
 
-            // Allow any vercel.app domain, including subdomains, and localhost
+            // Allow any vercel.app domain, including subdomains, Render and localhost
             if (origin.includes('vercel.app') ||
+                origin.includes('onrender.com') ||
                 origin.includes('localhost') ||
                 origin.includes('127.0.0.1')) {
                 callback(null, true);

@@ -146,13 +146,23 @@ const Auth = ({ onLogin }) => {
                         </motion.button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                    <div className="mt-8 pt-6 border-t border-white/5 text-center flex flex-col gap-3">
                         <button
                             onClick={() => setIsLogin(!isLogin)}
                             className="text-[10px] font-black uppercase tracking-widest text-light-textSecondary opacity-60 hover:opacity-100 hover:text-light-primary transition-all"
                         >
                             {isLogin ? "your first sign up" : "Already a member? Sign in"}
                         </button>
+
+                        {isLogin && (
+                            <button
+                                onClick={() => setFormData({ ...formData, email: 'admin@music.com', password: 'admin123' })}
+                                className="text-[9px] font-bold tracking-tighter text-light-primary/40 hover:text-light-primary transition-all uppercase"
+                                type="button"
+                            >
+                                Quick Admin Access
+                            </button>
+                        )}
                     </div>
                 </motion.div>
             </AnimatePresence>
